@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="user-controls">
+            <span id="user-info"></span>
+            <button id="logout-btn" class="btn btn-danger">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Family Tree</h1>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search by name..." onkeyup="handleMainSearchInput(event)">
+                <button onclick="searchPerson()">Search</button>
+                <button id="addPersonBtn" class="add-button" onclick="openAddPersonModal()" style="display: none;">Add New Person</button>
+                <div id="searchSuggestions" class="search-suggestions"></div>
+            </div>
+        </header>
+        
+        <main>
+            <div class="tree-outline">
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+                    <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+                </div>
+                <div id="tree-container"></div>
+            </div>
+            <div id="person-details" class="hidden">
+                <h2>Person Details</h2>
+                <div id="details-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Person Modal -->
+    <div id="addPersonModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddPersonModal()">&times;</span>
+            <h2>Add/Edit Person</h2>
+            <form id="addPersonForm" onsubmit="handleAddPerson(event)">
+                <div class="form-group">
+                    <label for="firstName">First Name *</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="lastName">Last Name *</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dateOfBirth">Date of Birth *</label>
+                    <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dateOfDeath">Date of Death</label>
+                    <input type="date" id="dateOfDeath" name="dateOfDeath">
+                </div>
+                
+                <div class="form-group">
+                    <label for="gender">Gender *</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">Select Gender</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" name="address"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gotra">Gotra *</label>
+                    <input type="text" id="gotra" name="gotra" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fatherSearch">Father</label>
+                    <input type="text" id="fatherSearch" oninput="handleParentSearchInput(event, 'father')" placeholder="Search for father..." autocomplete="off">
+                    <input type="hidden" id="fatherId" name="fatherId">
+                    <div id="fatherSuggestions" class="suggestions"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="motherSearch">Mother</label>
+                    <input type="text" id="motherSearch" oninput="handleParentSearchInput(event, 'mother')" placeholder="Search for mother..." autocomplete="off">
+                    <input type="hidden" id="motherId" name="motherId">
+                    <div id="motherSuggestions" class="suggestions"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="submit-button">Save</button>
+                    <button type="button" class="cancel-button" onclick="closeAddPersonModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Spouse Modal -->
+    <div id="addSpouseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddSpouseModal()">&times;</span>
+            <h2>Add Spouse</h2>
+            <form id="addSpouseForm" onsubmit="handleAddSpouse(event)">
+                <input type="hidden" id="person1Id" name="person1Id">
+                <div class="form-group">
+                    <label for="spouseSearch">Select Spouse:</label>
+                    <input type="text" id="spouseSearch" name="spouseSearch" placeholder="Search for spouse..." onkeyup="handleSpouseSearchInput(event)" required>
+                    <div id="spouseSuggestions" class="search-suggestions"></div>
+                    <input type="hidden" id="person2Id" name="person2Id">
+                </div>
+                <div class="form-group">
+                    <label for="marriageDate">Marriage Date:</label>
+                    <input type="date" id="marriageDate" name="marriageDate" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="submit-button">Add Spouse</button>
+                    <button type="button" onclick="closeAddSpouseModal()" class="cancel-button">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/tree.js"></script>
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // Initialize the tree
+            initializeTree();
+        });
+    </script>
+</body>
+</html> 
